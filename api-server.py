@@ -18,7 +18,6 @@ class describe_services(Resource):
     def get(self, service_code="All"):
         if service_code == "All":
             response = p.describe_services()
-            print('Service code is empty')
         else:
             response = p.describe_services(
                 ServiceCode=service_code#,
@@ -26,8 +25,17 @@ class describe_services(Resource):
                 #NextToken='string',
                 #MaxResults=123
             )
-        # return json string, in some kinda digest
-        return response['Services']#[0]['AttributeNames']
+        return response['Services']
+
+class get_attribute_values(Resource):
+    def get(self, service_code, attribute_name):
+        response = p.get_attribute_values(
+            ServiceCode=service_code,
+            AttributeName=attribute_name#,
+            #NextToken='string',
+            #MaxResults=123
+        ) 
+        return response['AttributeValues']
 
 class get_products(Resource):
     def get(self, service_code, filter_type, filter_field, filter_value):
@@ -44,13 +52,13 @@ class get_products(Resource):
             #NextToken='string',
             #MaxResults=123
         )
-        # return json string, in some kinda digest
         
-        return response['PriceList']#[0]
+        return response['PriceList']
 
 
 # Api routes
 api.add_resource(describe_services, '/describe_services/service_code=<string:service_code>')
+api.add_resource(get_attribute_values, '/get_attribute_values/service_code=<string:service_code>&attribute_name=<string:attribute_name>')
 api.add_resource(get_products, '/get_products/service_code=<string:service_code>&filter_type=<string:filter_type>&filter_field=<string:filter_field>&filter_value=<string:filter_value>')
 
 # Functions:
