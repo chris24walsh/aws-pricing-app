@@ -3,21 +3,34 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 import requests
-import json
+import json, yaml, json2html
 import re
 from collections import OrderedDict
 import boto3
 
 app = Flask(__name__)
 api = Api(app)
-session = requests.Session()
+requests_session = requests.Session()
+boto3_session = boto3.Session()
+p = boto3_session.client('pricing', region_name='us-east-1') 
 
-class Service_price(Resource):
+class describe_services(Resource):
+    def get(self, service_code="All"):
+        if service_code == "All":
+            response = p.describe_services()
+            print('Service code is empty')
+        else:
+            response = p.describe_services(
+                ServiceCode=service_code#,
+                #FormatVersion='string',
+                #NextToken='string',
+                #MaxResults=123
+            )
+        # return json string, in some kinda digest
+        return response['Services']#[0]['AttributeNames']
+
+class get_products(Resource):
     def get(self, service_code, filter_type, filter_field, filter_value):
-        # start boto3 session
-        session = boto3.Session()
-        # make aws pricing get-product call, using arguments as parameters
-        p = session.client('pricing', region_name='us-east-1') 
         response = p.get_products(
             ServiceCode=service_code,
             Filters=[
@@ -32,11 +45,13 @@ class Service_price(Resource):
             #MaxResults=123
         )
         # return json string, in some kinda digest
-        return json.dumps(response['PriceList'])
+        
+        return response['PriceList']#[0]
 
 
 # Api routes
-api.add_resource(Service_price, '/service_price/service_code=<string:service_code>&filter_type=<string:filter_type>&filter_field=<string:filter_field>&filter_value=<string:filter_value>')
+api.add_resource(describe_services, '/describe_services/service_code=<string:service_code>')
+api.add_resource(get_products, '/get_products/service_code=<string:service_code>&filter_type=<string:filter_type>&filter_field=<string:filter_field>&filter_value=<string:filter_value>')
 
 # Functions:
 
