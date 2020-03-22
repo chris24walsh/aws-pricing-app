@@ -16,11 +16,11 @@ p = boto3_session.client('pricing', region_name='us-east-1')
 
 class api_help(Resource):
     def get(self, command=""):
-        help_h = "/, /help, /help/<command>"
-        help_ds = "/describe_services/service_code=<string:service_code>"
-        help_gav = "/get_attribute_values/service_code=<string:service_code>&attribute_name=<string:attribute_name>"
-        help_gp = "/get_products/service_code=<string:service_code>&filter_type=<string:filter_type>&filter_field=<string:filter_field>&filter_value=<string:filter_value>"
-        help_all = ["The following api routes are available:", help_h, help_ds, help_gav, help_gp]
+        help_h = { "Description": "Display help page for command. If no command parameter provided, displays api overview.", "Syntax": "/help/[<command>]" }
+        help_ds = { "Description": "Describe available services, and their attribute names. If no service code parameter provided, displays for all service codes.", "Syntax": "/describe_services/[service_code=<string>]" }
+        help_gav = { "Description": "Get the attribute values for a service", "Syntax": "/get_attribute_values/service_code=<string>&attribute_name=<string>" }
+        help_gp = { "Description": "Get the details for an attribute value, for a service", "Syntax": "/get_products/service_code=<string>&filter_field=<string>&filter_value=<string>" }
+        help_all = { "Available commands": [help_h, help_ds, help_gav, help_gp] }
         help_info = str()
         if command == "describe_services":
             help_info = help_ds
@@ -28,13 +28,16 @@ class api_help(Resource):
             help_info = help_gav
         elif command == "get_products":
             help_info = help_gp
+        elif command == "":
+            print('empty command string')
+            help_info = help_all
         else:
             help_info = help_all
         return help_info
 
 class describe_services(Resource):
-    def get(self, service_code="All"):
-        if service_code == "All":
+    def get(self, service_code=""):
+        if service_code == "":
             response = p.describe_services()
         else:
             response = p.describe_services(
@@ -43,6 +46,8 @@ class describe_services(Resource):
                 #NextToken='string',
                 #MaxResults=123
             )
+            if response['Services'] == []:
+                return "Not a valid service"
         return response['Services']
 
 class get_attribute_values(Resource):
@@ -56,7 +61,7 @@ class get_attribute_values(Resource):
         return response['AttributeValues']
 
 class get_products(Resource):
-    def get(self, service_code, filter_type, filter_field, filter_value):
+    def get(self, service_code, filter_field, filter_value, filter_type="TERM_MATCH"):
         response = p.get_products(
             ServiceCode=service_code,
             Filters=[
@@ -75,13 +80,13 @@ class get_products(Resource):
 
 
 # Api routes
-api.add_resource(api_help, '/', '/help', '/help/<command>')
-api.add_resource(describe_services, '/describe_services/service_code=<string:service_code>')
+api.add_resource(api_help, '/', '/help/', '/help/<string:command>')
+api.add_resource(describe_services, '/describe_services/', '/describe_services/service_code=<string:service_code>')
 api.add_resource(get_attribute_values, '/get_attribute_values/service_code=<string:service_code>&attribute_name=<string:attribute_name>')
-api.add_resource(get_products, '/get_products/service_code=<string:service_code>&filter_type=<string:filter_type>&filter_field=<string:filter_field>&filter_value=<string:filter_value>')
+api.add_resource(get_products, '/get_products/service_code=<string:service_code>&filter_field=<string:filter_field>&filter_value=<string:filter_value>')
 
 # Functions:
 
 
 if __name__ == '__main__':
-   app.run(debug='True',host='0.0.0.0',port='5002')
+   app.run(debug='True',host='0.0.0.0',port='8000')
